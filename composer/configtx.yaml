@@ -1,0 +1,106 @@
+# Votty Example Network
+
+---
+Organizations:
+
+    - &Peers
+        Name: Peers
+        ID: PeersMSP
+        MSPDir: crypto-config/ordererOrganizations/votty.net/msp
+        AdminPrincipal: Role.MEMBER
+
+    - &Initiator
+        Name: InitPeer
+        ID: InitPeerMSP
+
+        MSPDir: crypto-config/peerOrganizations/init.votty.net/msp
+
+        # turn off security for the peer
+        AdminPrincipal: Role.MEMBER
+
+        AnchorPeers:
+            # AnchorPeers defines the location of peers which can be used
+            # for cross org gossip communication.  Note, this value is only
+            # encoded in the genesis block in the Application section context
+            - Host: d1.init.example.com
+              Port: 7051
+
+################################################################################
+#
+#   SECTION: Orderer
+#
+#   - This section defines the values to encode into a config transaction or
+#   genesis block for orderer related parameters
+#
+################################################################################
+Orderer: &PeersDetail
+
+    # Orderer Type: The orderer implementation to start
+    # Available types are "solo" and "kafka"
+    OrdererType: solo
+
+    Addresses:
+        peers.votty.net:7050
+
+    # Batch Timeout: The amount of time to wait before creating a batch
+    BatchTimeout: 2s
+
+    # Batch Size: Controls the number of messages batched into a block
+    BatchSize:
+
+        # Max Message Count: The maximum number of messages to permit in a batch
+        MaxMessageCount: 10
+
+        # Absolute Max Bytes: The absolute maximum number of bytes allowed for
+        # the serialized messages in a batch.
+        AbsoluteMaxBytes: 98 MB
+
+        # Preferred Max Bytes: The preferred maximum number of bytes allowed for
+        # the serialized messages in a batch. A message larger than the preferred
+        # max bytes will result in a batch larger than preferred max bytes.
+        PreferredMaxBytes: 512 KB
+
+    # Organizations is the list of orgs which are defined as participants on
+    # the orderer side of the network
+    Organizations:
+
+################################################################################
+#
+#   SECTION: Application
+#
+#   - This section defines the values to encode into a config transaction or
+#   genesis block for application related parameters
+#
+################################################################################
+Application: &ApplicationDefaults
+
+    # Organizations is the list of orgs which are defined as participants on
+    # the application side of the network
+    Organizations:
+
+################################################################################
+#
+#   Profile
+#
+#   - Different configuration profiles may be encoded here to be specified
+#   as parameters to the configtxgen tool
+#
+################################################################################
+Profiles:
+
+    ComposerOrdererGenesis:
+        Orderer:
+            <<: *PeersDetail
+            Organizations:
+                - *Peers
+        Consortiums:
+            Votty:
+                Organizations:
+                    - *Initiator
+
+    ComposerChannel:
+        Consortium: Votty
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Initiator
